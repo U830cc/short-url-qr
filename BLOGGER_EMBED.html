@@ -1,0 +1,34 @@
+<!--
+  ========================================================================
+  โค้ดสำหรับแปะใน Blogger (https://hubrouteplus.blogspot.com/)
+  ========================================================================
+
+  วิธีใช้ (เลือกอย่างใดอย่างหนึ่ง):
+
+  แบบ A — ใส่เป็น Gadget (แนะนำ ใส่ได้ทั้ง Sidebar หรือเต็มหน้า):
+    1. เข้า Blogger → เมนู "รูปแบบ" (Layout)
+    2. กด "เพิ่ม Gadget" (Add a Gadget) ในตำแหน่งที่ต้องการ
+    3. เลือก "HTML/JavaScript"
+    4. คัดลอกโค้ดด้านล่าง (เฉพาะส่วน <div ...> ... </div>) ไปวาง แล้วบันทึก
+
+  แบบ B — แทรกในโพสต์/หน้าเว็บ:
+    1. สร้าง/แก้ไขโพสต์ → สลับมุมมองเป็น "HTML view" (ปุ่ม < > หรือ "มุมมอง HTML")
+    2. วางโค้ดด้านล่างในตำแหน่งที่ต้องการ แล้วเผยแพร่
+
+  หมายเหตุ:
+  - allow="clipboard-write" จำเป็นสำหรับปุ่ม "คัดลอก" ให้ทำงานได้ในเว็บ Blogger
+  - ความสูงปรับได้ที่ height ของ iframe (ค่าเริ่มต้น 600px พอดีกับฟอร์ม + ผลลัพธ์ + QR)
+-->
+
+<div style="max-width:760px;margin:0 auto;">
+  <iframe
+    src="https://short-url-qr.vercel.app/"
+    title="Short URL & QR Code"
+    width="100%"
+    height="600"
+    style="border:0;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.12);width:100%;"
+    loading="lazy"
+    allow="clipboard-write"
+    referrerpolicy="no-referrer-when-downgrade">
+  </iframe>
+</div>
