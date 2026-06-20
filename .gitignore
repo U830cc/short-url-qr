@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# SQLite (เลิกใช้แล้ว แต่กันเผื่อไฟล์เก่า)
+*.db
+
+# Vercel
+.vercel/
+
+# Env
+.env
+.env.local
+
+# OS
+.DS_Store
