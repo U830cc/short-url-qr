@@ -9,6 +9,7 @@
 - คลิกลิงก์สั้นแล้ว redirect ไป URL เดิม (พร้อมอัปเดตเวลาใช้งานล่าสุด)
 - ลิงก์ที่ไม่ได้ถูกใช้งานเกิน **7 วัน** จะถูกลบอัตโนมัติ ผ่าน Vercel Cron (รันทุกวันตี 3 UTC)
 - ฝังในหน้าเว็บ Blogger ได้ด้วย iframe (ดู `BLOGGER_EMBED.html`)
+- โดเมนหลัก: **https://hongnii.com** (สำรอง: https://short-url-qr.vercel.app)
 
 ## สถาปัตยกรรม
 
@@ -23,7 +24,7 @@
 | ตัวแปร         | จำเป็น | คำอธิบาย                                                        |
 | -------------- | ------ | -------------------------------------------------------------- |
 | `DATABASE_URL` | ✅     | Neon Postgres connection string (แนะนำ endpoint แบบ pooled)     |
-| `BASE_URL`     | —      | โดเมนสำหรับสร้างลิงก์สั้น เช่น `https://xxx.vercel.app` (ไม่ใส่ก็เดาจาก request) |
+| `BASE_URL`     | —      | โดเมนสำหรับสร้างลิงก์สั้น เช่น `https://hongnii.com` (ไม่ใส่ก็เดาจาก request) |
 | `CRON_SECRET`  | —      | โทเคนป้องกัน `/api/cleanup` (Vercel ใส่ให้อัตโนมัติเมื่อตั้ง Cron) |
 
 ## รัน local
