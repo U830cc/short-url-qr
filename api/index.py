@@ -143,7 +143,11 @@ def index():
                 "qr": make_qr_data_url(short),
             }
     return render_template_string(
-        PAGE_HTML, result=result, error=error, inactive_days=INACTIVE_DAYS
+        PAGE_HTML,
+        result=result,
+        error=error,
+        inactive_days=INACTIVE_DAYS,
+        year=datetime.now(TH_TZ).year,
     )
 
 
@@ -205,6 +209,7 @@ def dashboard():
         expiring_soon=expiring_soon,
         links=links,
         inactive_days=INACTIVE_DAYS,
+        year=datetime.now(TH_TZ).year,
     )
 
 
@@ -269,6 +274,13 @@ THEME_CSS = r"""
     .prompt { color:var(--green); }
     .prompt .path { color:var(--blue); }
     a { color:var(--teal); }
+    .credit {
+      margin-top:22px; padding-top:16px; border-top:1px solid var(--line);
+      text-align:center; font-size:12px; color:var(--muted); letter-spacing:.3px;
+    }
+    .credit .brand { color:var(--teal); font-weight:700; }
+    .credit .sep { color:var(--line); margin:0 8px; }
+    .credit .heart { color:var(--red); }
 """
 
 
@@ -383,6 +395,10 @@ PAGE_HTML = r"""<!doctype html>
       <div class="note">
         <span class="green">#</span> ลิงก์ที่ไม่ได้ถูกใช้งานเกิน {{ inactive_days }} วัน จะถูกระบบลบอัตโนมัติ
       </div>
+
+      <div class="credit">
+        <span class="brand">MAPOHJI License</span><span class="sep">·</span>&copy; {{ year }}<span class="sep">·</span>Short URL &amp; QR Code
+      </div>
     </div>
   </div>
 
@@ -487,6 +503,10 @@ DASHBOARD_HTML = r"""<!doctype html>
       </div>
 
       <div class="note"># เรียงตามจำนวนคลิกมากสุด · แสดงสูงสุด 300 รายการ · เวลาเป็น GMT+7</div>
+
+      <div class="credit">
+        <span class="brand">MAPOHJI License</span><span class="sep">·</span>&copy; {{ year }}<span class="sep">·</span>Short URL &amp; QR Code
+      </div>
     </div>
   </div>
 </body>
