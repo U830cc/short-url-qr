@@ -68,7 +68,31 @@ def ensure_schema():
         )
         conn.execute("ALTER TABLE links ADD COLUMN IF NOT EXISTS clicks BIGINT NOT NULL DEFAULT 0")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_links_last_used ON links (last_used)")
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')"
+        )
     _schema_ready = True
+
+
+# ---------- settings (key/value) ----------
+
+def get_ads():
+    """คืนค่า (เปิดแสดงโฆษณาหรือไม่, โค้ดโฆษณา)."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT key, value FROM settings WHERE key IN ('ads_enabled', 'ad_code')"
+        ).fetchall()
+    d = {k: v for k, v in rows}
+    return d.get("ads_enabled") == "1", d.get("ad_code", "")
+
+
+def set_setting(key, value):
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (%s, %s) "
+            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            (key, value),
+        )
 
 
 # ---------- helpers ----------
@@ -142,16 +166,19 @@ def index():
                 "original": original,
                 "qr": make_qr_data_url(short),
             }
+    ads_enabled, ad_code = get_ads()
+    ad_html = ad_code if (ads_enabled and ad_code.strip()) else None
     return render_template_string(
         PAGE_HTML,
         result=result,
         error=error,
         inactive_days=INACTIVE_DAYS,
         year=datetime.now(TH_TZ).year,
+        ad_html=ad_html,
     )
 
 
-@app.route("/dashboard")
+@app.route("/dashboard", methods=["GET", "POST"])
 def dashboard():
     # ป้องกันด้วย HTTP Basic Auth (รหัสผ่าน = ADMIN_PASSWORD)
     if not ADMIN_PASSWORD:
@@ -169,6 +196,15 @@ def dashboard():
         )
 
     ensure_schema()
+
+    # บันทึกการตั้งค่าโฆษณา
+    saved = False
+    if request.method == "POST":
+        set_setting("ad_code", request.form.get("ad_code", "").strip())
+        set_setting("ads_enabled", "1" if request.form.get("ads_enabled") == "1" else "0")
+        saved = True
+
+    ads_enabled, ad_code = get_ads()
     now = datetime.now(timezone.utc)
     with get_conn() as conn:
         total_links = conn.execute("SELECT count(*) FROM links").fetchone()[0]
@@ -210,6 +246,9 @@ def dashboard():
         links=links,
         inactive_days=INACTIVE_DAYS,
         year=datetime.now(TH_TZ).year,
+        ads_enabled=ads_enabled,
+        ad_code=ad_code,
+        saved=saved,
     )
 
 
@@ -340,6 +379,8 @@ PAGE_HTML = r"""<!doctype html>
     .qr-wrap img { width:160px; height:160px; display:block; }
     .download-btn { display:inline-block; margin-top:10px; font-size:12px;
       color:var(--teal); text-decoration:none; }
+    .ad-slot { margin-top:30px; text-align:center; overflow:hidden; }
+    .ad-slot img, .ad-slot iframe { max-width:100%; }
     .note { margin-top:30px; padding-top:18px; border-top:1px solid var(--line);
       color:var(--muted); font-size:12px; }
     .note .green { color:var(--green); }
@@ -390,6 +431,10 @@ PAGE_HTML = r"""<!doctype html>
             <a class="download-btn" href="{{ result.qr }}" download="qr-{{ result.short.split('/')[-1] }}.png">&#x2B07; download QR</a>
           </div>
         </div>
+      {% endif %}
+
+      {% if ad_html %}
+      <div class="ad-slot">{{ ad_html|safe }}</div>
       {% endif %}
 
       <div class="note">
@@ -452,6 +497,30 @@ DASHBOARD_HTML = r"""<!doctype html>
     .pill.warn { color:var(--yellow); background:rgba(255,189,46,.14); }
     .empty { padding:30px; text-align:center; color:var(--muted); }
     .note { margin-top:18px; color:var(--muted); font-size:12px; }
+    .ads-panel { margin-top:30px; padding-top:22px; border-top:1px solid var(--line); }
+    .ads-panel h2 { font-size:16px; color:#fff; margin-bottom:6px; }
+    .ads-panel h2 .arrow { color:var(--teal); }
+    .ads-panel .hint { color:var(--muted); font-size:12px; margin-bottom:16px; }
+    .chk { display:flex; align-items:center; gap:9px; color:var(--text);
+      font-size:14px; margin-bottom:14px; cursor:pointer; }
+    .chk input { width:16px; height:16px; accent-color:var(--teal); cursor:pointer; }
+    .ads-panel textarea {
+      width:100%; min-height:140px; resize:vertical; padding:14px;
+      background:var(--term); color:var(--text); border:1px solid var(--line);
+      border-radius:8px; font-family:inherit; font-size:13px; line-height:1.5;
+      outline:none; transition:border-color .15s;
+    }
+    .ads-panel textarea:focus { border-color:var(--teal); }
+    .ads-panel textarea::placeholder { color:#55657d; }
+    .ads-actions { display:flex; align-items:center; gap:14px; margin-top:14px; }
+    .ads-panel button {
+      padding:11px 22px; font-size:14px; font-weight:700; color:#062b25;
+      background:var(--teal); border:none; border-radius:8px; cursor:pointer;
+      font-family:inherit; transition:filter .15s, transform .1s;
+    }
+    .ads-panel button:hover { filter:brightness(1.08); }
+    .ads-panel button:active { transform:translateY(1px); }
+    .saved { color:var(--green); font-size:13px; }
     @media (max-width:600px){ .stats{grid-template-columns:1fr;} .term-body{padding:20px;} }
   </style>
 </head>
@@ -503,6 +572,22 @@ DASHBOARD_HTML = r"""<!doctype html>
       </div>
 
       <div class="note"># เรียงตามจำนวนคลิกมากสุด · แสดงสูงสุด 300 รายการ · เวลาเป็น GMT+7</div>
+
+      <div class="ads-panel">
+        <h2><span class="arrow">&#9656;</span> โฆษณา (Ads)</h2>
+        <p class="hint">วางโค้ด Google AdSense หรือ HTML/JS แล้วเปิดสวิตช์ — โฆษณาจะแสดงบนหน้าแรกก่อนบรรทัดแจ้งเตือนการลบลิงก์ (ถ้าปิดหรือไม่มีโค้ด หน้าแรกจะแสดงปกติ)</p>
+        <form method="post">
+          <label class="chk">
+            <input type="checkbox" name="ads_enabled" value="1" {% if ads_enabled %}checked{% endif %}>
+            เปิดแสดงโฆษณาบนหน้าแรก
+          </label>
+          <textarea name="ad_code" placeholder="&lt;!-- วางโค้ด Google AdSense หรือ HTML/JS ที่นี่ --&gt;">{{ ad_code }}</textarea>
+          <div class="ads-actions">
+            <button type="submit">&#9656; บันทึก</button>
+            {% if saved %}<span class="saved">&#10003; บันทึกแล้ว</span>{% endif %}
+          </div>
+        </form>
+      </div>
 
       <div class="credit">
         <span class="brand">MAPOHJI License</span><span class="sep">·</span>&copy; {{ year }}<span class="sep">·</span>Short URL &amp; QR Code
